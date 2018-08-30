@@ -750,6 +750,11 @@ int vb2_core_reqbufs(struct vb2_queue *q, enum vb2_memory memory,
 		return -EBUSY;
 	}
 
+	if (q->in_stop_streaming) {
+		dprintk(q, 1, "reqbufs while the stream is being stopped\n");
+		return -EBUSY;
+	}
+
 	if (*count == 0 || q->num_buffers != 0 ||
 	    (q->memory != VB2_MEMORY_UNKNOWN && q->memory != memory)) {
 		/*
@@ -1575,6 +1580,11 @@ int vb2_core_qbuf(struct vb2_queue *q, unsigned int index, void *pb,
 	struct vb2_buffer *vb;
 	int ret;
 
+	if (q->in_stop_streaming) {
+		dprintk(q, 1, "qbuf while the stream is being stopped\n");
+		return -EBUSY;
+	}
+
 	if (q->error) {
 		dprintk(q, 1, "fatal error occurred on queue\n");
 		return -EIO;
@@ -1739,6 +1749,11 @@ static int __vb2_wait_for_done_vb(struct vb2_queue *q, int nonblocking)
 
 		if (!q->streaming) {
 			dprintk(q, 1, "streaming off, will not wait for buffers\n");
+			return -EINVAL;
+		}
+
+		if (q->in_stop_streaming) {
+			dprintk(q, 1, "the stream is being stopped, will not wait for buffers\n");
 			return -EINVAL;
 		}
 
@@ -1929,12 +1944,18 @@ static void __vb2_queue_cancel(struct vb2_queue *q)
 {
 	unsigned int i;
 
+	if (WARN_ON(q->in_stop_streaming))
+		return;
 	/*
 	 * Tell driver to stop all transactions and release all queued
 	 * buffers.
 	 */
 	if (q->start_streaming_called)
+	 {
+		q->in_stop_streaming = 1;
 		call_void_qop(q, stop_streaming, q);
+		q->in_stop_streaming = 0;
+	}
 
 	/*
 	 * If you see this warning, then the driver isn't cleaning up properly
@@ -2031,6 +2052,11 @@ int vb2_core_streamon(struct vb2_queue *q, unsigned int type)
 		return -EINVAL;
 	}
 
+	if (q->in_stop_streaming) {
+		dprintk(q, 1, "streamon while the stream is being stopped\n");
+		return -EBUSY;
+	}
+
 	if (q->streaming) {
 		dprintk(q, 3, "already streaming\n");
 		return 0;
@@ -2082,6 +2108,10 @@ int vb2_core_streamoff(struct vb2_queue *q, unsigned int type)
 		return -EINVAL;
 	}
 
+	if (q->in_stop_streaming) {
+		dprintk(q, 1, "streamoff while the stream is being stopped\n");
+		return -EBUSY;
+	}
 	/*
 	 * Cancel will pause streaming and remove all buffers from the driver
 	 * and videobuf, effectively returning control over them to userspace.

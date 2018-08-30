@@ -613,6 +613,7 @@ struct vb2_queue {
 
 	unsigned int			streaming:1;
 	unsigned int			start_streaming_called:1;
+	unsigned int			in_stop_streaming:1;
 	unsigned int			error:1;
 	unsigned int			waiting_for_buffers:1;
 	unsigned int			waiting_in_dqbuf:1;
