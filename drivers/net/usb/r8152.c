@@ -751,7 +751,7 @@ enum rtl_register_content {
 #define INTR_LINK		0x0004
 
 #define RTL8152_RMS		(VLAN_ETH_FRAME_LEN + ETH_FCS_LEN)
-#define RTL8153_RMS		RTL8153_MAX_PACKET
+#define RTL8153_RMS		9216 /* 9K */
 #define RTL8152_TX_TIMEOUT	(5 * HZ)
 #define mtu_to_size(m)		((m) + VLAN_ETH_HLEN + ETH_FCS_LEN)
 #define size_to_mtu(s)		((s) - VLAN_ETH_HLEN - ETH_FCS_LEN)
@@ -9486,7 +9486,7 @@ static int rtl8152_probe(struct usb_interface *intf,
 	case RTL_VER_02:
 	case RTL_VER_07:
 	default:
-		netdev->max_mtu = ETH_DATA_LEN;
+		netdev->max_mtu = size_to_mtu(9 * 1024);
 		break;
 	}
 
