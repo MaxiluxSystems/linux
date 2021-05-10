@@ -166,6 +166,13 @@ static DEFINE_MUTEX(open_lock);
 module_param(perdev_minors, int, 0444);
 MODULE_PARM_DESC(perdev_minors, "Minors numbers to allocate per device");
 
+/*
+ * Allow quirks to be overridden for the current card
+ */
+static char *card_quirks;
+module_param(card_quirks, charp, 0644);
+MODULE_PARM_DESC(card_quirks, "Force the use of the indicated quirks (a bitfield)");
+
 static inline int mmc_blk_part_switch(struct mmc_card *card,
 				      unsigned int part_type);
 static void mmc_blk_rw_rq_prep(struct mmc_queue_req *mqrq,
@@ -2901,7 +2908,16 @@ static int mmc_blk_probe(struct mmc_card *card)
 	if (!(card->csd.cmdclass & CCC_BLOCK_READ))
 		return -ENODEV;
 
-	mmc_fixup_device(card, mmc_blk_fixups);
+	if (card_quirks) {
+		unsigned long quirks;
+		if (kstrtoul(card_quirks, 0, &quirks) == 0)
+			card->quirks = (unsigned int)quirks;
+		else
+			pr_err("mmc_block: Invalid card_quirks parameter '%s'\n",
+			       card_quirks);
+	}
+	else
+		mmc_fixup_device(card, mmc_blk_fixups);
 
 	card->complete_wq = alloc_workqueue("mmc_complete",
 					WQ_MEM_RECLAIM | WQ_HIGHPRI, 0);
