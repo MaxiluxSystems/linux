@@ -169,7 +169,7 @@ static void raw_rcv(struct sk_buff *oskb, void *data)
 	/* add CAN specific message flags for raw_recvmsg() */
 	pflags = raw_flags(skb);
 	*pflags = 0;
-	if (oskb->sk)
+	if (can_skb_prv(oskb)->flags == MSG_DONTROUTE)
 		*pflags |= MSG_DONTROUTE;
 	if (oskb->sk == sk)
 		*pflags |= MSG_CONFIRM;

@@ -50,6 +50,7 @@ struct can_skb_priv {
 	int ifindex;
 	int skbcnt;
 	unsigned int frame_len;
+	unsigned int flags;
 	struct can_frame cf[];
 };
 
@@ -70,9 +71,16 @@ static inline void can_skb_set_owner(struct sk_buff *skb, struct sock *sk)
 	 * after the last TX skb has been freed). So only increase
 	 * socket refcount if the refcount is > 0.
 	 */
-	if (sk && refcount_inc_not_zero(&sk->sk_refcnt)) {
-		skb->destructor = sock_efree;
-		skb->sk = sk;
+	if (sk) {
+		struct can_skb_priv *skb_priv;
+
+		skb_priv = can_skb_prv(skb);
+		skb_priv->flags = MSG_DONTROUTE;
+
+		if (refcount_inc_not_zero(&sk->sk_refcnt)) {
+			skb->destructor = sock_efree;
+			skb->sk = sk;
+		}
 	}
 }
 
