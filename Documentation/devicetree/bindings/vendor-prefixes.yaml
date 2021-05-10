@@ -175,6 +175,8 @@ patternProperties:
     description: Bitmain Technologies
   "^blutek,.*":
     description: BluTek Power
+  "^blokaslabs,.*":
+    description: Vilniaus Blokas UAB
   "^boe,.*":
     description: BOE Technology Group Co., Ltd.
   "^bosch,.*":
